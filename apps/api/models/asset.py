@@ -26,8 +26,8 @@ class Asset(Base):
 
     organization: Mapped["Organization"] = relationship("Organization", back_populates="assets")
 
-    # Relationships to models defined in later tasks (AssetFingerprint, Violation, ScanRun).
-    # Added here once those models are created so SQLAlchemy can resolve the targets:
-    #   fingerprint: Mapped["AssetFingerprint | None"] = relationship("AssetFingerprint", back_populates="asset", uselist=False)
-    #   violations: Mapped[list["Violation"]] = relationship("Violation", back_populates="asset")
+    fingerprint: Mapped["AssetFingerprint | None"] = relationship("AssetFingerprint", back_populates="asset", uselist=False)
+    violations: Mapped[list["Violation"]] = relationship("Violation", back_populates="asset")
+
+    # ScanRun relationship deferred until Task 6:
     #   scan_runs: Mapped[list["ScanRun"]] = relationship("ScanRun", back_populates="asset")
