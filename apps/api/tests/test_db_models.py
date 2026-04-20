@@ -123,6 +123,7 @@ async def test_create_task(db_session):
     await db_session.commit()
     await db_session.refresh(t)
     assert t.status == "queued"
+    assert t.type == "fingerprint"
     assert t.result is None
 
 @pytest.mark.asyncio
@@ -139,4 +140,5 @@ async def test_create_scan_run(db_session):
     await db_session.refresh(run)
     assert run.id is not None
     assert run.violations_found == 0
+    assert run.run_at is not None
     assert run.errors is None
