@@ -142,3 +142,13 @@ async def test_create_scan_run(db_session):
     assert run.violations_found == 0
     assert run.run_at is not None
     assert run.errors is None
+
+@pytest.mark.asyncio
+async def test_all_seven_tables_exist(db_session):
+    from sqlalchemy import text
+    result = await db_session.execute(
+        text("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")
+    )
+    tables = {row[0] for row in result.fetchall()}
+    expected = {"organizations", "assets", "asset_fingerprints", "violations", "dmca_notices", "tasks", "scan_runs"}
+    assert expected.issubset(tables), f"Missing tables: {expected - tables}"
