@@ -1,8 +1,8 @@
 # GUARDIAN Build Progress
 
-## Status: Phase 1 — Infrastructure (Tasks 1–6 of 11 complete)
+## Status: Phase 1 — COMPLETE ✅ | Phase 2 — Not started
 
-Last commit: `9532a10` — feat: add Task and ScanRun ORM models — all 7 models complete
+Last commit: `a0f1b5e` — chore: Phase 1 infrastructure complete — all services verified
 
 ---
 
@@ -10,16 +10,11 @@ Last commit: `9532a10` — feat: add Task and ScanRun ORM models — all 7 model
 
 When starting a new session, tell Claude:
 
-> "Resume the GUARDIAN build from progress.md. We are in Phase 1 infrastructure, starting at Task 7 (Alembic migrations). Use the subagent-driven-development skill to continue dispatching implementer + reviewer subagents per the plan at `docs/superpowers/plans/2026-04-20-phase1-infrastructure.md`."
-
-Then Claude should:
-1. Read this file + the plan file
-2. Apply the outstanding minor fix from Task 6 review (see below)
-3. Continue with Task 7
+> "Resume the GUARDIAN build from progress.md. Phase 1 is complete. Start Phase 2 (Backend Core). Write a plan first using superpowers:writing-plans, then execute with superpowers:subagent-driven-development."
 
 ---
 
-## Completed Tasks
+## Phase 1 — Completed Tasks
 
 | # | Task | Status | Key Commits |
 |---|---|---|---|
@@ -29,98 +24,93 @@ Then Claude should:
 | 4 | ORM models — Organization + Asset | ✅ | 8b21f5c, 3e73d4a |
 | 5 | ORM models — AssetFingerprint + Violation + DMCANotice | ✅ | a73f35d, 0ea3a64 |
 | 6 | ORM models — Task + ScanRun | ✅ | 9532a10 |
-
-## Remaining Tasks
-
-| # | Task | Status |
-|---|---|---|
-| 7 | Alembic setup + initial migration | ⬜ |
-| 8 | FastAPI app skeleton + /health endpoint | ⬜ |
-| 9 | Docker Compose + Dockerfiles | ⬜ |
-| 10 | Next.js web scaffold | ⬜ |
-| 11 | Integration test — docker compose up | ⬜ |
+| Fix B | Test assertions for task + scan_run | ✅ | cfaa970 |
+| 7 | Alembic setup + initial migration | ✅ | 832143b |
+| 8 | FastAPI app skeleton + /health endpoint | ✅ | bbc67c6 |
+| 9 | Docker Compose + Dockerfiles | ✅ | e9e9f34, 6b285a1 |
+| 10 | Next.js web scaffold | ✅ | a649ae1, 854857c |
+| 11 | Integration test — docker compose up | ✅ | a0f1b5e |
 
 ---
 
-## Outstanding Fix Before Task 7
+## Phase 1 Verification Results
 
-The Task 6 code reviewer flagged two minor issues (non-blocking, but tidy up before Task 7):
+All Phase 1 criteria met:
 
-**Fix A — `task.py` created_at missing explicit nullable=False**
-
-In `apps/api/models/task.py`, `created_at` column should have `nullable=False` added for consistency with the rest of the codebase:
-```python
-created_at: Mapped[datetime] = mapped_column(
-    DateTime(timezone=True), server_default=func.now(), nullable=False
-)
-```
-
-**Fix B — Two test assertions to add in test_db_models.py**
-
-In `test_create_task`: add `assert t.type == "fingerprint"`
-In `test_create_scan_run`: add `assert run.run_at is not None`
-
-Apply these as a single commit: `fix: explicit nullable on task.created_at, complete test assertions`
+- ✅ `docker compose up --build` — all 6 services started
+- ✅ `GET http://localhost:8000/health` → `{"success": true, "data": {"status": "ok"}, "meta": {}}`
+- ✅ `alembic upgrade head` — created all 7 tables (Running upgrade -> b47f479c9504, initial_schema)
+- ✅ `GET http://localhost:3000` → 200
+- ✅ `GET http://localhost:6333/healthz` → "healthz check passed"
+- ✅ `pytest tests/ -v` — 10 tests PASS
 
 ---
 
 ## What Has Been Built
 
-### Directory structure
+### Full directory structure
 ```
 guardian/
 ├── .gitignore
 ├── .env.example
 ├── .env  (local only, gitignored)
 ├── CLAUDE.md
+├── docker-compose.yml             ← 6 services: postgres, redis, qdrant, api, celery_worker, web
 ├── apps/
-│   └── api/
-│       ├── requirements.txt
-│       ├── requirements-dev.txt
-│       ├── pytest.ini
-│       ├── core/
-│       │   ├── __init__.py
-│       │   └── config.py          ← pydantic-settings Settings class
-│       ├── db/
-│       │   ├── __init__.py
-│       │   ├── base.py            ← DeclarativeBase
-│       │   ├── session.py         ← async engine + get_async_session
-│       │   └── migrations/
-│       │       └── versions/
-│       │           └── .gitkeep
-│       ├── models/
-│       │   ├── __init__.py        ← exports all 7 models
-│       │   ├── organization.py
-│       │   ├── asset.py
-│       │   ├── asset_fingerprint.py
-│       │   ├── violation.py
-│       │   ├── dmca_notice.py
-│       │   ├── task.py
-│       │   └── scan_run.py
-│       └── tests/
-│           ├── __init__.py
-│           ├── conftest.py        ← db_session fixture
-│           └── test_db_models.py  ← 8 tests, all passing
-├── .claude/
-│   └── docs/                      ← all reference docs moved here
-│       ├── architectural_patterns.md
-│       ├── ml_pipeline.md
-│       ├── agent_system.md
-│       ├── data_models.md
-│       ├── frontend_patterns.md
-│       ├── security.md
-│       └── phase2_stubs.md
-└── docs/
-    └── superpowers/
-        ├── specs/
-        │   └── 2026-04-20-guardian-design.md
-        └── plans/
-            └── 2026-04-20-phase1-infrastructure.md
+│   ├── api/
+│   │   ├── requirements.txt
+│   │   ├── requirements-dev.txt
+│   │   ├── pytest.ini
+│   │   ├── alembic.ini
+│   │   ├── main.py                ← FastAPI app + lifespan + CORS + /health
+│   │   ├── celery_app.py          ← Celery stub
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   └── config.py          ← pydantic-settings Settings class
+│   │   ├── db/
+│   │   │   ├── __init__.py
+│   │   │   ├── base.py            ← DeclarativeBase
+│   │   │   ├── session.py         ← async engine + get_async_session
+│   │   │   └── migrations/
+│   │   │       ├── env.py         ← async Alembic env
+│   │   │       ├── script.py.mako
+│   │   │       └── versions/
+│   │   │           └── 0001_initial_schema.py
+│   │   ├── models/
+│   │   │   ├── __init__.py        ← exports all 7 models
+│   │   │   ├── organization.py
+│   │   │   ├── asset.py
+│   │   │   ├── asset_fingerprint.py
+│   │   │   ├── violation.py
+│   │   │   ├── dmca_notice.py
+│   │   │   ├── task.py
+│   │   │   └── scan_run.py
+│   │   └── tests/
+│   │       ├── __init__.py
+│   │       ├── conftest.py        ← db_session fixture
+│   │       └── test_db_models.py  ← 9 tests (8 models + 1 tables_exist)
+│   │       └── test_health.py     ← 1 test (/health endpoint)
+│   └── web/
+│       ├── package.json
+│       ├── next.config.mjs        ← note: .mjs not .ts (Next 14.2 requirement)
+│       ├── tsconfig.json
+│       ├── tailwind.config.ts
+│       ├── postcss.config.mjs
+│       └── src/app/
+│           ├── layout.tsx
+│           ├── globals.css
+│           └── page.tsx
+├── infrastructure/
+│   └── docker/
+│       ├── api.Dockerfile
+│       └── web.Dockerfile
+└── .claude/
+    └── docs/                      ← all reference docs
 ```
 
 ### Test status
 ```
-8 tests PASSED (all in apps/api/tests/test_db_models.py)
+10 tests PASSED (apps/api/tests/)
 - test_db_session_connects
 - test_create_organization
 - test_create_asset
@@ -129,39 +119,36 @@ guardian/
 - test_create_dmca_notice
 - test_create_task
 - test_create_scan_run
+- test_all_seven_tables_exist
+- test_health_returns_ok
 ```
 
-### Key decisions made during build
-- `org_id` on Asset has `index=True` (added proactively — primary multi-tenant filter)
-- `asset_id` on Violation and ScanRun have `index=True`
-- `violation_id` on DMCANotice has `index=True`
-- `TEST_DATABASE_URL` in conftest.py reads from env var with localhost fallback
-- conftest `db_session` fixture uses `try/finally` for safe teardown
-- pytest.ini has `pythonpath = .` and `asyncio_default_fixture_loop_scope = function`
-- `.env.example` Celery Redis URLs use `localhost` (not `redis` Docker hostname)
+### Key decisions & deviations from plan
+- Host port remapping due to local conflicts: postgres→5433, redis→6381 (local postgres on 5432, another project's redis on 6380)
+- `next.config.mjs` used instead of `next.config.ts` — Next.js 14.2 does not support `.ts` config files
+- `apps/api/.env` (local, gitignored) — pydantic-settings reads `.env` relative to CWD when running tests from `apps/api/`
+- `next-env.d.ts` and `*.tsbuildinfo` added to `.gitignore`
 
 ---
 
-## Phase 1 Plan Reference
+## Phase 2 Plan
 
-Full plan: `docs/superpowers/plans/2026-04-20-phase1-infrastructure.md`
+Phase 2: Backend Core — auth, middleware, base schemas, routers, dependency injection.
 
-**Task 7 summary (Alembic):** Create `alembic.ini`, `db/migrations/env.py` (async), `db/migrations/script.py.mako`, then run `alembic revision --autogenerate -m "initial_schema"` to generate `0001_initial_schema.py`. Apply with `alembic upgrade head`. Add test `test_all_seven_tables_exist`.
+**Scope:**
+- JWT auth (login endpoint, token decode middleware)
+- Organization-scoped dependency injection (get_current_org)
+- Base Pydantic schemas (APIResponse wrapper, pagination)
+- Routers skeleton: /api/v1/assets, /api/v1/violations, /api/v1/scan-runs
+- Rate limiting middleware (slowapi or custom Redis-based)
+- Health endpoint extended: checks DB + Redis connectivity
 
-**Task 8 summary (FastAPI):** Create `main.py` (FastAPI app + lifespan + /health + CORS), `celery_app.py` (Celery stub). Test with httpx AsyncClient. 9 tests total.
-
-**Task 9 summary (Docker):** Create `docker-compose.yml` (6 services: postgres, redis, qdrant, api, celery_worker, web), `infrastructure/docker/api.Dockerfile`, `infrastructure/docker/web.Dockerfile`.
-
-**Task 10 summary (Next.js):** Create `apps/web/package.json`, `next.config.ts`, `tsconfig.json`, `tailwind.config.ts`, `postcss.config.mjs`, `src/app/layout.tsx`, `src/app/globals.css`, `src/app/page.tsx`. Run `npm install && tsc --noEmit`.
-
-**Task 11 summary (Integration):** Copy `.env.example` → `.env`, `docker compose up --build -d`, `alembic upgrade head` inside container, verify `/health` + web + qdrant, `docker compose down`.
+Create plan at: `docs/superpowers/plans/2026-04-20-phase2-backend-core.md`
 
 ---
 
-## After Phase 1
+## After Phase 2
 
-Phases 2–6 each get their own plan. The order:
-- Phase 2: Backend core (auth, middleware, base schemas, routers, DI)
 - Phase 3: Fingerprinting pipeline (CLIP, pHash, Chromaprint, watermark, Celery tasks)
 - Phase 4: Frontend slice 1 (login, asset upload, task polling)
 - Phase 5: Agent system (LangGraph, 5 nodes, Playwright crawler)
