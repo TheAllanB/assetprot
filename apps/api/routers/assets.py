@@ -1,14 +1,72 @@
+import json
+import os
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.dependencies import get_db, get_current_org_id
-from schemas.asset import AssetResponse
+from core.config import settings
+from core.dependencies import get_current_org_id, get_db
+from dependencies.auth import get_current_user
+from models.asset import Asset
+from models.asset_fingerprint import AssetFingerprint
+from models.user import User
+from schemas.asset import AssetIngestResponse, AssetResponse
 from schemas.base import APIResponse, PaginatedResponse
 from services.asset_service import get_asset, list_assets
+from tasks.fingerprint_task import fingerprint_task
 
 router = APIRouter(prefix="/api/v1/assets", tags=["assets"])
+
+
+@router.post("", response_model=APIResponse[AssetIngestResponse])
+async def ingest_asset(
+    file: UploadFile = File(...),
+    title: str = Form(...),
+    content_type: str = Form(...),
+    territories: str = Form("[]"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if content_type not in ("image", "video", "audio"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="content_type must be image, video, or audio",
+        )
+
+    try:
+        territories_list = json.loads(territories)
+    except json.JSONDecodeError:
+        territories_list = []
+
+    asset = Asset(
+        org_id=current_user.org_id,
+        title=title,
+        content_type=content_type,
+        territories=territories_list,
+        status="pending",
+    )
+    db.add(asset)
+    await db.flush()
+
+    fp = AssetFingerprint(asset_id=asset.id)
+    db.add(fp)
+    await db.commit()
+    await db.refresh(asset)
+
+    os.makedirs(settings.upload_dir, exist_ok=True)
+    ext = (file.filename or "file").rsplit(".", 1)[-1] if "." in (file.filename or "") else "bin"
+    file_path = os.path.join(settings.upload_dir, f"{asset.id}.{ext}")
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    task = fingerprint_task.delay(str(asset.id), file_path, content_type)
+
+    return APIResponse(
+        success=True,
+        data=AssetIngestResponse(asset_id=str(asset.id), task_id=task.id),
+    )
 
 
 @router.get("", response_model=PaginatedResponse[AssetResponse])

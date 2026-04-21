@@ -2,6 +2,7 @@ import os
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+import models  # noqa: F401 — registers all ORM models with Base before create_all
 from db.base import Base
 
 TEST_DATABASE_URL = os.getenv(

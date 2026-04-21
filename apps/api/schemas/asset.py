@@ -29,3 +29,9 @@ class AssetResponse(BaseModel):
     @field_serializer("id", "org_id")
     def serialize_uuid(self, v: uuid.UUID) -> str:
         return str(v)
+
+
+class AssetIngestResponse(BaseModel):
+    asset_id: str
+    task_id: str
+    status: str = "pending"
