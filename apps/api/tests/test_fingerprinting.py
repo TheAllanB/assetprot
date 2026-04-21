@@ -109,3 +109,41 @@ def test_compute_chromaprint_returns_none_on_failure():
         result = compute_chromaprint("/tmp/nonexistent.mp3")
 
     assert result is None
+
+
+# ── watermark ─────────────────────────────────────────────────────────────────
+
+def test_embed_watermark_returns_pil_image():
+    from unittest.mock import patch, MagicMock
+    import numpy as np
+    from ml.fingerprinting.watermark import embed_watermark
+
+    original = _make_test_image(256, 256)
+    fake_wm_bgr = np.zeros((256, 256, 3), dtype=np.uint8)
+
+    mock_encoder = MagicMock()
+    mock_encoder.encode.return_value = fake_wm_bgr
+
+    with patch("ml.fingerprinting.watermark.WatermarkEncoder", return_value=mock_encoder):
+        result = embed_watermark(original, "test-asset-id-123")
+
+    assert isinstance(result, Image.Image)
+    assert result.size == original.size
+    mock_encoder.set_watermark.assert_called_once()
+    mock_encoder.encode.assert_called_once()
+
+
+def test_decode_watermark_returns_bytes():
+    from unittest.mock import patch, MagicMock
+    from ml.fingerprinting.watermark import decode_watermark
+
+    img = _make_test_image(256, 256)
+    expected_bytes = b"abcdefgh"
+
+    mock_decoder = MagicMock()
+    mock_decoder.decode.return_value = expected_bytes
+
+    with patch("ml.fingerprinting.watermark.WatermarkDecoder", return_value=mock_decoder):
+        result = decode_watermark(img)
+
+    assert result == expected_bytes
