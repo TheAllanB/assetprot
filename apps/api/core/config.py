@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     celery_broker_url: str
     celery_result_backend: str
     app_env: str = "development"
+    upload_dir: str = "/tmp/guardian-uploads"
+    qdrant_collection: str = "asset_embeddings"
 
 
 settings = Settings()
