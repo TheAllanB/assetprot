@@ -152,3 +152,20 @@ async def test_all_seven_tables_exist(db_session):
     tables = {row[0] for row in result.fetchall()}
     expected = {"organizations", "assets", "asset_fingerprints", "violations", "dmca_notices", "tasks", "scan_runs"}
     assert expected.issubset(tables), f"Missing tables: {expected - tables}"
+
+@pytest.mark.asyncio
+async def test_create_user(db_session):
+    from models.user import User
+    org = Organization(name="Auth Org", plan="pro")
+    db_session.add(org)
+    await db_session.flush()
+    user = User(
+        org_id=org.id,
+        email="admin@sportsco.com",
+        hashed_password="$2b$12$placeholder",
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+    assert user.id is not None
+    assert user.is_active is True
