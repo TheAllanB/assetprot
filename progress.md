@@ -124,17 +124,34 @@
 
 ## Resumption Prompt (Next Session)
 
-> Continue GUARDIAN — Phase 4: Frontend Slice 1.
+Paste this verbatim as your opening message:
+
+---
+
+> Continue GUARDIAN — Phase 4: Frontend Slice 1 (Next.js shell, login, asset list + upload, task-status polling).
 >
-> Read progress.md before starting. Phase 3 ML fingerprinting pipeline is fully complete:
-> 4-stage pipeline (pHash, CLIP, Chromaprint, watermark), Celery task, POST /api/v1/assets ingest,
-> 54/54 tests at 87% coverage.
+> Read progress.md before starting. Everything up to and including Phase 3 is complete and pushed to master on GitHub (https://github.com/TheAllanB/assetprot).
 >
-> Key context:
-> - Stack: FastAPI + SQLAlchemy async + PostgreSQL + Celery/Redis + Qdrant
-> - Auth: HTTPBearer at /auth/*; protected routes via get_current_user in dependencies/auth.py
-> - POST /api/v1/assets: multipart upload → saves to upload_dir → dispatches fingerprint_task → returns {asset_id, task_id}
-> - Celery task polls DB for status updates (pending → fingerprinting → protected | failed)
-> - PostgreSQL on localhost:5432; prefix pytest with DATABASE_URL="postgresql+asyncpg://guardian:changeme_dev@localhost:5432/guardian"
-> - 54/54 tests currently passing — do not regress
-> - Next: Next.js 14 frontend — login page, asset list, asset upload form, task-status polling (GET /api/v1/tasks/{id})
+> **Current state:**
+> - Phases 2 + 3 backend fully done: auth, all resource routers, rate limiting, 4-stage ML fingerprinting pipeline (pHash/wHash, CLIP→Qdrant, Chromaprint, invisible-watermark), Celery ingest task
+> - 54/54 tests passing, 87% coverage
+> - Working directory: `C:\Users\allan\Desktop\assetprot`
+> - API runs on FastAPI at port 8000; frontend lives in `apps/web/` (Next.js 14, App Router, Tailwind, shadcn/ui)
+>
+> **Key backend facts needed for the frontend:**
+> - Base URL: `http://localhost:8000`
+> - Auth: POST `/auth/register` + `/auth/login` → `{success, data: {access_token, refresh_token, token_type}}`; store tokens in localStorage, send as `Authorization: Bearer <token>`
+> - POST `/api/v1/assets` — multipart form: `file`, `title`, `content_type` (image|video|audio), `territories` (JSON string) → `{success, data: {asset_id, task_id, status: "pending"}}`
+> - GET `/api/v1/assets` → `{success, data: [{id, title, content_type, status, created_at, ...}], meta: {total, offset, limit}}`
+> - GET `/api/v1/tasks/{task_id}` → `{success, data: {id, status, result}}` — poll this to show upload progress
+> - Asset `status` values: `pending` → `fingerprinting` → `protected` | `failed`
+> - All error responses: `{success: false, error: {code, message}}`
+>
+> **Stack reminders:**
+> - Next.js 14 App Router (`apps/web/src/app/`)
+> - Components in `apps/web/src/components/`, API client in `apps/web/src/lib/`
+> - Use shadcn/ui for all UI primitives
+> - Type-check with `npx tsc --noEmit` before marking frontend tasks done
+> - Backend tests: `cd apps/api && DATABASE_URL="postgresql+asyncpg://guardian:changeme_dev@localhost:5432/guardian" pytest tests/ -v`
+>
+> Start by invoking `superpowers:writing-plans` to write the Phase 4 frontend plan, then execute it.
