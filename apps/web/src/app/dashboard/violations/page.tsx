@@ -61,8 +61,7 @@ export default function ViolationsPage() {
                         {violation.discovered_url}
                       </p>
                       <p className="text-sm text-gray-500">
-                        {violation.platform} •{" "}
-                        {violation.confidence.toFixed(1%)} confidence
+                        {violation.platform} • {(violation.confidence * 100).toFixed(1)}% confidence
                       </p>
                       <p className="text-xs text-gray-400">
                         {new Date(violation.detected_at).toLocaleDateString()}

@@ -1,21 +1,17 @@
 from langgraph.graph import END, StateGraph
 
 from ml.agents.state import AgentState
-from ml.agents.planner_agent import planner_node
-from ml.agents.crawler_agent import crawler_node
-from ml.agents.matcher_agent import matcher_node
-from ml.agents.watermark_decoder_node import watermark_decoder_node
-from ml.agents.reporter_node import reporter_node
+from ml.agents import planner_agent, crawler_agent, matcher_agent, watermark_decoder_node, reporter_node
 
 
 def create_agent_graph() -> StateGraph:
     workflow = StateGraph(AgentState)
 
-    workflow.add_node("planner", planner_node)
-    workflow.add_node("crawler", crawler_node)
-    workflow.add_node("matcher", matcher_node)
-    workflow.add_node("watermark_decoder", watermark_decoder_node)
-    workflow.add_node("reporter", reporter_node)
+    workflow.add_node("planner", planner_agent.planner_node)
+    workflow.add_node("crawler", crawler_agent.crawler_node)
+    workflow.add_node("matcher", matcher_agent.matcher_node)
+    workflow.add_node("watermark_decoder", watermark_decoder_node.watermark_decoder_node)
+    workflow.add_node("reporter", reporter_node.reporter_node)
 
     workflow.set_entry_point("planner")
     workflow.add_edge("planner", "crawler")

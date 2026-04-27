@@ -1,4 +1,4 @@
-interface User {
+export interface User {
   id: string;
   email: string;
   org_id: string;
@@ -6,7 +6,7 @@ interface User {
   created_at: string;
 }
 
-interface Asset {
+export interface Asset {
   id: string;
   org_id: string;
   title: string;
@@ -19,7 +19,7 @@ interface Asset {
   updated_at: string;
 }
 
-interface Violation {
+export interface Violation {
   id: string;
   asset_id: string;
   discovered_url: string;
@@ -34,7 +34,7 @@ interface Violation {
   resolved_at: string | null;
 }
 
-interface ScanRun {
+export interface ScanRun {
   id: string;
   asset_id: string;
   status: string;
@@ -43,20 +43,20 @@ interface ScanRun {
   run_at: string;
 }
 
-interface TaskStatus {
+export interface TaskStatus {
   id: string;
   status: string;
   result: Record<string, unknown> | null;
   error: string | null;
 }
 
-interface APIResponse<T> {
+export interface APIResponse<T> {
   success: boolean;
   data: T;
   error?: { code: string; message: string };
 }
 
-interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
   meta: {

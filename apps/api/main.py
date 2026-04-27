@@ -16,6 +16,7 @@ from routers.auth import router as auth_router
 from routers.scan_runs import router as scan_runs_router
 from routers.tasks import router as tasks_router
 from routers.violations import router as violations_router
+from routers.dmca import router as dmca_router
 
 
 @asynccontextmanager
@@ -57,6 +58,7 @@ app.include_router(assets_router)
 app.include_router(violations_router)
 app.include_router(scan_runs_router)
 app.include_router(tasks_router)
+app.include_router(dmca_router)
 
 
 @app.get("/health")
