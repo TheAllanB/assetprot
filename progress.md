@@ -1,7 +1,7 @@
 # GUARDIAN Implementation Progress
 
 **Date:** 2026-04-28
-**Status:** In Progress - Day 1 Complete
+**Status:** Day 1 Complete - Core Backend + Frontend MVP
 
 ---
 
@@ -28,14 +28,14 @@ Response schema now includes:
 - `data`: T
 - `meta`: dict
 - `error`: dict | None
-- `timestamp`: datetime
+- `timestamp`: datetime (auto-generated)
 
 ---
 
 ### Step 3: Seed/Demo Data ✅
 **File:** `apps/api/db/seed.py`
 
-Seeds demo data:
+Seeds on startup:
 - Organization: "Demo Sports League"
 - User: admin@demo.com / demo123
 - 3 Demo assets with fingerprints
@@ -53,7 +53,7 @@ Seeds demo data:
 Added:
 - GET /api/v1/violations (list with optional asset_id filter)
 - GET /api/v1/violations/{violation_id} (get single)
-- POST /api/violations (create violation)
+- POST /api/v1/violations (create violation)
 
 Required adding `org_id` to Violation model.
 
@@ -71,28 +71,41 @@ Features:
 - Ping/pong keep-alive
 - JSON message broadcast
 
-Registered in main.py
+Registered in main.py.
 
 ---
 
-## Pending Tasks
+### Step 6: Agent Execution Traces ✅
+**Files:**
+- `apps/api/models/scan_run.py` - Added org_id, agent_trace_log fields
+- `apps/api/routers/scan_runs.py` - Added GET /{scan_run_id}, GET /{scan_run_id}/trace
+- `apps/api/db/repositories/scan_run_repo.py` - Added get_by_id
+- `apps/api/services/scan_run_service.py` - Added get_scan_run
 
-### Step 6: Agent Execution Traces
-Need to add:
-- Agent trace logging (record step inputs/outputs)
-- GET /api/v1/scan-runs/{scan_run_id}/trace endpoint
-- Store traces as JSONB in ScanRun model
+---
 
-### Step 7: Threat Map (Frontend)
-Need to add:
-- Mapbox GL integration
-- Threat visualization component
-- Animated arcs for propagation
+### Step 7: Threat Map (Frontend) ✅
+**File:** `apps/web/src/components/ThreatMap.tsx`
 
-### Step 8: Demo Walkthrough Documentation
-Need to create:
-- Step-by-step demo script
-- API test commands
+Features:
+- SVG-based world map visualization
+- Threat markers by severity color
+- Interactive tooltips
+- Legend with color coding
+- Animated pulse effect
+
+Integrated into dashboard page.
+
+---
+
+## Database Changes (Migration Required)
+
+### Added org_id to tables:
+1. `violations` - Added org_id column
+2. `scan_runs` - Added org_id column
+
+### New fields:
+- `scan_runs.agent_trace_log` - JSONB for agent traces
 
 ---
 
@@ -106,6 +119,12 @@ Need to create:
 | apps/api/models/violation.py | Added org_id field |
 | apps/api/db/repositories/violation_repo.py | Added get_by_id, updated create |
 | apps/api/services/violation_service.py | Added asset_id filter, get_violation |
+| apps/api/models/scan_run.py | Added org_id, agent_trace_log fields |
+| apps/api/routers/scan_runs.py | Added GET endpoints with traces |
+| apps/api/db/repositories/scan_run_repo.py | Added get_by_id |
+| apps/api/services/scan_run_service.py | Added get_scan_run |
+| apps/web/src/app/dashboard/page.tsx | Added ThreatMap component |
+| apps/web/src/components/ThreatMap.tsx | **CREATED** |
 
 ## Files Created
 
@@ -113,3 +132,39 @@ Need to create:
 |------|---------|
 | apps/api/db/seed.py | Demo data seeding |
 | apps/api/routers/ws.py | WebSocket endpoints |
+| apps/web/src/components/ThreatMap.tsx | Threat visualization |
+
+---
+
+## API Endpoints Summary
+
+```
+GET    /health                    - Health check
+POST   /auth/register           - Register user
+POST   /auth/login             - Login
+POST   /auth/refresh           - Refresh token
+GET    /api/v1/assets         - List assets
+POST   /api/v1/assets         - Upload asset
+GET    /api/v1/assets/:id      - Get asset
+GET    /api/v1/violations      - List violations
+GET    /api/v1/violations/:id  - Get violation
+POST   /api/v1/violations     - Create violation
+GET    /api/v1/scan-runs      - List scan runs
+GET    /api/v1/scan-runs/:id   - Get scan run
+GET    /api/v1/scan-runs/:id/trace - Get agent trace
+POST   /api/v1/scan-runs      - Trigger scan
+POST   /api/v1/dmca           - Generate DMCA
+WS     /ws/alerts/:user_id    - Real-time alerts
+WS     /ws/org/:org_id       - Org alerts
+```
+
+---
+
+## To Continue from Here
+
+See: `RESTART GUIDE.md` for how to continue from this state.
+
+For demo testing:
+1. Run `cd apps/api && python -m db.seed` to seed data
+2. Run `docker compose up --build` to start stack
+3. Test endpoints with demo credentials

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from core.config import settings
 from core.security import hash_password
 from db.base import Base
-from db.session import engine, async_session_maker
+from db.session import engine, AsyncSessionLocal
 from models.asset import Asset
 from models.asset_fingerprint import AssetFingerprint
 from models.organization import Organization
@@ -19,7 +19,7 @@ async def create_tables():
 
 async def seed_demo_data():
     """Seed demo data for testing and development."""
-    async with async_session_maker() as session:
+    async with AsyncSessionLocal() as session:
         # Check if demo org already exists
         existing = await session.scalar(
             select(Organization).where(Organization.name == "Demo Sports League")
@@ -90,6 +90,7 @@ async def seed_demo_data():
         violations = [
             Violation(
                 id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+                org_id=org.id,
                 asset_id=demo_assets[0].id,
                 discovered_url="https://example.com/pirated-video-1",
                 platform="YouTube",
@@ -102,6 +103,7 @@ async def seed_demo_data():
             ),
             Violation(
                 id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                org_id=org.id,
                 asset_id=demo_assets[1].id,
                 discovered_url="https://streamingsite.net/clips/goals",
                 platform="Custom",

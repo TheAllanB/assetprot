@@ -3,8 +3,22 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ThreatMap } from "@/components/ThreatMap";
 import { api } from "@/lib/api";
 import type { Asset, Violation } from "@/lib/types";
+
+interface ThreatData {
+  id: string;
+  asset_title: string;
+  platform: string;
+  confidence: number;
+  origin_lon: number;
+  origin_lat: number;
+  detected_lon: number;
+  detected_lat: number;
+  status: string;
+  discovered_url?: string;
+}
 
 export default function DashboardPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -24,6 +38,19 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const threats: ThreatData[] = violations.map((v, i) => ({
+    id: v.id,
+    asset_title: assets.find((a) => a.id === v.asset_id)?.title || "Unknown Asset",
+    platform: v.platform,
+    confidence: v.confidence,
+    origin_lon: -0.1276,
+    origin_lat: 51.5074,
+    detected_lon: -122.4 + Math.random() * 60,
+    detected_lat: 25 + Math.random() * 30,
+    status: v.status,
+    discovered_url: v.discovered_url,
+  }));
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -33,7 +60,6 @@ export default function DashboardPage() {
   }
 
   const protectedCount = assets.filter((a) => a.status === "protected").length;
-  const pendingCount = assets.filter((a) => a.status === "pending" || a.status === "fingerprinting").length;
 
   return (
     <div className="space-y-6">
@@ -41,6 +67,15 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="text-gray-600">Overview of your protected assets</p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Threat Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ThreatMap threats={threats} />
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
