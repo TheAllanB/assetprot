@@ -1,7 +1,20 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+
 export default function Home() {
-  return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold">GUARDIAN</h1>
-    </main>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem("access_token");
+    if (accessToken) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  }, [router]);
+
+  return null;
 }
