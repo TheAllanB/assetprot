@@ -1,7 +1,7 @@
 import logging
 import uuid
 
-from celery_app import celery
+from celery_app import celery_app
 
 from db.session import AsyncSessionLocal
 from ml.agents.graph import agent_graph
@@ -11,7 +11,7 @@ from models.scan_run import ScanRun
 logger = logging.getLogger(__name__)
 
 
-@celery.task(bind=True, max_retries=3)
+@celery_app.task(bind=True, max_retries=3)
 def detection_task(self, asset_id: str, org_id: str):
     scan_run = None
 
@@ -19,6 +19,7 @@ def detection_task(self, asset_id: str, org_id: str):
         async with AsyncSessionLocal() as db:
             scan_run = ScanRun(
                 asset_id=uuid.UUID(asset_id),
+                org_id=uuid.UUID(org_id),
                 status="running",
             )
             db.add(scan_run)
@@ -26,11 +27,19 @@ def detection_task(self, asset_id: str, org_id: str):
             await db.refresh(scan_run)
             return scan_run
 
-    async def update_scan_run(scan_run: ScanRun, status: str, violations_found: int, errors: list[dict] | None = None):
+    async def update_scan_run(
+        scan_run: ScanRun,
+        status: str,
+        violations_found: int,
+        errors: list[dict] | None = None,
+        agent_trace: dict | None = None,
+    ):
         scan_run.status = status
         scan_run.violations_found = violations_found
         if errors:
             scan_run.errors = errors
+        if agent_trace:
+            scan_run.agent_trace_log = agent_trace
         async with AsyncSessionLocal() as db:
             db.add(scan_run)
             await db.commit()

@@ -37,7 +37,7 @@ async def seed_demo_data():
         user = User(
             org_id=org.id,
             email="admin@demo.com",
-            hashed_password=hash_password("demo123"),
+            hashed_password=hash_password("demo123!"),
             is_active=True,
         )
         session.add(user)
@@ -48,25 +48,43 @@ async def seed_demo_data():
             Asset(
                 id="11111111-1111-1111-1111-111111111111",
                 org_id=org.id,
-                title="Champions League Final 2024",
+                title="Champions League Final 2024 — Full Broadcast",
                 content_type="video",
-                territories=["US", "UK", "EU"],
+                territories=["US", "UK", "EU", "APAC"],
                 status="protected",
+                rights_metadata={"sport": "football", "teams": ["Real Madrid", "Dortmund"], "tags": ["champions league", "final"]},
             ),
             Asset(
                 id="22222222-2222-2222-2222-222222222222",
                 org_id=org.id,
-                title="Top 10 Goals of the Season",
+                title="Top 10 Goals of the Season — Highlights Reel",
                 content_type="video",
                 territories=["US", "UK"],
                 status="protected",
+                rights_metadata={"sport": "football", "tags": ["goals", "highlights", "season"]},
             ),
             Asset(
                 id="33333333-3333-3333-3333-333333333333",
                 org_id=org.id,
-                title="Press Conference Highlights",
+                title="Press Conference — Post-Match Interview",
                 content_type="video",
                 territories=["US"],
+                status="protected",
+            ),
+            Asset(
+                id="44444444-4444-4444-4444-444444444444",
+                org_id=org.id,
+                title="Official Match Day Poster — Digital Art",
+                content_type="image",
+                territories=["US", "UK", "EU"],
+                status="protected",
+            ),
+            Asset(
+                id="55555555-5555-5555-5555-555555555555",
+                org_id=org.id,
+                title="Stadium Anthem — Official Audio",
+                content_type="audio",
+                territories=["US", "UK", "EU", "APAC"],
                 status="protected",
             ),
         ]
@@ -84,41 +102,80 @@ async def seed_demo_data():
             session.add(fp)
 
         # Create demo violations
-        from datetime import datetime, timezone
+        from datetime import datetime, timezone, timedelta
         from models.violation import Violation
 
+        now = datetime.now(timezone.utc)
         violations = [
             Violation(
                 id="aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
                 org_id=org.id,
                 asset_id=demo_assets[0].id,
-                discovered_url="https://example.com/pirated-video-1",
+                discovered_url="https://youtube.com/watch?v=pirated-cl-final",
                 platform="YouTube",
-                status="suspected",
-                confidence=0.92,
+                status="confirmed",
+                confidence=0.96,
                 infringement_type="exact_copy",
                 transformation_types=["re_encoded"],
-                estimated_reach=50000,
-                detected_at=datetime.now(timezone.utc),
+                estimated_reach=125000,
+                detected_at=now - timedelta(hours=2),
             ),
             Violation(
                 id="bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
                 org_id=org.id,
                 asset_id=demo_assets[1].id,
-                discovered_url="https://streamingsite.net/clips/goals",
+                discovered_url="https://streamingsite.net/clips/top-goals-2024",
                 platform="Custom",
                 status="confirmed",
-                confidence=0.87,
+                confidence=0.89,
                 infringement_type="re_encoded",
                 transformation_types=["re_encoded", "watermark_removed"],
-                estimated_reach=25000,
-                detected_at=datetime.now(timezone.utc),
+                estimated_reach=45000,
+                detected_at=now - timedelta(hours=6),
+            ),
+            Violation(
+                id="cccccccc-cccc-cccc-cccc-cccccccccccc",
+                org_id=org.id,
+                asset_id=demo_assets[0].id,
+                discovered_url="https://reddit.com/r/soccer/comments/pirated_highlights",
+                platform="reddit",
+                status="suspected",
+                confidence=0.78,
+                infringement_type="partial_clip",
+                transformation_types=["cropped", "re_encoded"],
+                estimated_reach=18000,
+                detected_at=now - timedelta(hours=12),
+            ),
+            Violation(
+                id="dddddddd-dddd-dddd-dddd-dddddddddddd",
+                org_id=org.id,
+                asset_id=demo_assets[3].id,
+                discovered_url="https://instagram.com/p/unauthorized_poster_repost",
+                platform="instagram",
+                status="suspected",
+                confidence=0.72,
+                infringement_type="exact_copy",
+                transformation_types=[],
+                estimated_reach=8500,
+                detected_at=now - timedelta(days=1),
+            ),
+            Violation(
+                id="eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+                org_id=org.id,
+                asset_id=demo_assets[4].id,
+                discovered_url="https://tiktok.com/@user/video/anthem_remix",
+                platform="tiktok",
+                status="suspected",
+                confidence=0.65,
+                infringement_type="audio_only",
+                transformation_types=["remixed"],
+                estimated_reach=32000,
+                detected_at=now - timedelta(days=2),
             ),
         ]
         session.add_all(violations)
-
         await session.commit()
-        print("Demo data seeded successfully")
+        print("Demo data seeded successfully (5 assets, 5 violations)")
 
 
 async def main():

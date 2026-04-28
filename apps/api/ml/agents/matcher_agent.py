@@ -80,7 +80,7 @@ async def matcher_node(state: AgentState) -> dict[str, Any]:
             for match in matches:
                 candidate_matches.append({
                     "url": url,
-                    "asset_id": match["payload"]["asset_id"],
+                    "asset_id": match["asset_id"],
                     "similarity": match["score"],
                     "phash": phash,
                     "platform": extract_platform(url),

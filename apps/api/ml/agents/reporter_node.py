@@ -12,9 +12,14 @@ logger = logging.getLogger(__name__)
 
 async def reporter_node(state: AgentState) -> dict[str, Any]:
     confirmed_violations = state.get("confirmed_violations", [])
+    org_id = state.get("org_id")
     errors = state.get("errors", [])
 
     violations_written = []
+
+    if not org_id:
+        errors.append({"node": "reporter", "error": "Missing org_id in agent state"})
+        return {"status": "completed", "violations_written": [], "errors": errors}
 
     async with AsyncSessionLocal() as db:
         for violation_data in confirmed_violations:
@@ -22,6 +27,7 @@ async def reporter_node(state: AgentState) -> dict[str, Any]:
                 asset_id = uuid.UUID(violation_data["asset_id"])
                 violation = await create_violation(
                     db,
+                    org_id=uuid.UUID(org_id),
                     asset_id=asset_id,
                     discovered_url=violation_data["url"],
                     platform=violation_data.get("platform", "unknown"),

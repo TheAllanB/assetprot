@@ -9,7 +9,7 @@ from dependencies.auth import get_current_user
 from models.user import User
 from models.violation import Violation
 from schemas.base import APIResponse, PaginatedResponse
-from schemas.violation import ViolationResponse
+from schemas.violation import CreateViolationRequest, ViolationResponse
 from services.violation_service import get_violation, list_violations
 
 router = APIRouter(prefix="/api/v1/violations", tags=["violations"])
@@ -45,35 +45,38 @@ async def get_violation_route(
 
 @router.post("", response_model=APIResponse[ViolationResponse])
 async def create_violation_route(
-    asset_id: uuid.UUID = Query(...),
-    discovered_url: str = Query(...),
-    platform: str = Query(...),
-    confidence: float = Query(0.5),
-    infringement_type: str = Query("suspected"),
-    estimated_reach: int | None = Query(None),
-    transformation_types: str = Query("[]"),
+    req: CreateViolationRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    import json
-
-    try:
-        trans_types = json.loads(transformation_types)
-    except json.JSONDecodeError:
-        trans_types = []
-
     violation = Violation(
         org_id=current_user.org_id,
-        asset_id=asset_id,
-        discovered_url=discovered_url,
-        platform=platform,
+        asset_id=req.asset_id,
+        discovered_url=req.discovered_url,
+        platform=req.platform,
         status="suspected",
-        confidence=confidence,
-        infringement_type=infringement_type,
-        transformation_types=trans_types,
-        estimated_reach=estimated_reach,
+        confidence=req.confidence,
+        infringement_type=req.infringement_type,
+        transformation_types=req.transformation_types,
+        estimated_reach=req.estimated_reach,
     )
     db.add(violation)
     await db.commit()
     await db.refresh(violation)
+
+    # Broadcast alert via WebSocket
+    try:
+        from routers.ws import manager
+
+        await manager.broadcast_to_org(str(current_user.org_id), {
+            "type": "violation_detected",
+            "violation_id": str(violation.id),
+            "asset_id": str(req.asset_id),
+            "platform": req.platform,
+            "confidence": req.confidence,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+    except Exception:
+        pass  # WebSocket broadcast is best-effort
+
     return APIResponse(success=True, data=ViolationResponse.model_validate(violation))

@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.dependencies import get_current_org_id, get_db
@@ -57,7 +57,7 @@ async def get_scan_run_trace(
 
 @router.post("", response_model=APIResponse[dict])
 async def trigger_scan(
-    asset_id: str,
+    asset_id: str = Query(...),
     current_user: User = Depends(get_current_user),
 ):
     task = detection_task.delay(asset_id, str(current_user.org_id))
