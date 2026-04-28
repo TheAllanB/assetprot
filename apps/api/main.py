@@ -17,6 +17,7 @@ from routers.scan_runs import router as scan_runs_router
 from routers.tasks import router as tasks_router
 from routers.violations import router as violations_router
 from routers.dmca import router as dmca_router
+from routers.ws import router as ws_router
 
 
 @asynccontextmanager
