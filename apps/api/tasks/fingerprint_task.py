@@ -1,3 +1,10 @@
+"""
+Celery fingerprint task (SRP + DIP).
+
+SRP: This task only orchestrates the fingerprinting workflow.
+DIP: Uses FingerprintService with injected strategies (OCP extension point).
+"""
+
 import asyncio
 import os
 from io import BytesIO
@@ -17,12 +24,24 @@ def _make_session() -> tuple:
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=5)
 def fingerprint_task(self, asset_id: str, file_path: str, content_type: str) -> dict:
+    """
+    Celery task for fingerprinting an asset.
+
+    DIP: Creates FingerprintService with strategies injected —
+    the service doesn't know about Celery, and the task doesn't
+    know about fingerprinting algorithms.
+    """
     async def _run():
         from qdrant_client import QdrantClient
         from transformers import CLIPModel, CLIPProcessor
 
-        from services.fingerprint_service import FingerprintService
+        from services.fingerprint_service import (
+            AudioFingerprintStrategy,
+            FingerprintService,
+            ImageFingerprintStrategy,
+        )
 
+        # Load models (SRP — model loading is separate from fingerprinting)
         clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
         clip_model.eval()
@@ -31,18 +50,24 @@ def fingerprint_task(self, asset_id: str, file_path: str, content_type: str) -> 
         engine, factory = _make_session()
         try:
             async with factory() as session:
-                service = FingerprintService(
-                    db=session,
+                # DIP: Inject strategies into the service
+                image_strategy = ImageFingerprintStrategy(
                     qdrant=qdrant,
                     clip_model=clip_model,
                     clip_processor=clip_processor,
+                    collection=settings.qdrant_collection,
                 )
-                if content_type == "audio":
-                    await service.process_audio(asset_id, file_path)
-                else:
+                audio_strategy = AudioFingerprintStrategy()
+
+                service = FingerprintService(db=session, strategies=[image_strategy, audio_strategy])
+
+                # Build kwargs based on content type
+                kwargs = {}
+                if content_type in ("image", "video"):
                     with open(file_path, "rb") as f:
-                        image = Image.open(BytesIO(f.read())).convert("RGB")
-                    await service.process(asset_id, image)
+                        kwargs["image"] = Image.open(BytesIO(f.read())).convert("RGB")
+
+                await service.process(asset_id, content_type, file_path, **kwargs)
         finally:
             await engine.dispose()
             try:

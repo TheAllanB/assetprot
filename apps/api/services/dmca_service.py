@@ -1,8 +1,26 @@
+"""
+DMCA notice generation service (SRP + OCP + DIP).
+
+SRP: This module only handles DMCA notice text generation.
+OCP: New notice formats can be added by creating new DMCAGenerator implementations.
+DIP: Callers depend on the DMCAGenerator protocol.
+"""
+
 from datetime import datetime
+from typing import Any
 
 
-def generate_dmca_notice(violation) -> str:
-    notice = f"""DMCA Takedown Notice
+class StandardDMCAGenerator:
+    """
+    Standard DMCA takedown notice generator (OCP — implements DMCAGenerator protocol).
+
+    LSP: Can be substituted with any other DMCAGenerator implementation
+    (e.g., EuropeanGDPRNoticeGenerator, JapaneseCopyrightNoticeGenerator).
+    """
+
+    def generate(self, violation: Any) -> str:
+        """Generate a standard DMCA takedown notice for a violation."""
+        return f"""DMCA Takedown Notice
 
 Date: {datetime.now().strftime('%B %d, %Y')}
 
@@ -36,4 +54,17 @@ Please contact us to confirm the action taken.
 Sincerely,
 GUARDIAN Content Protection Team
 """
-    return notice
+
+
+# Default generator instance
+_default_generator = StandardDMCAGenerator()
+
+
+def generate_dmca_notice(violation: Any, generator: StandardDMCAGenerator | None = None) -> str:
+    """
+    Generate a DMCA notice using the given generator (DIP).
+
+    Defaults to StandardDMCAGenerator if none provided.
+    """
+    gen = generator or _default_generator
+    return gen.generate(violation)
